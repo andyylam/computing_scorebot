@@ -9,6 +9,7 @@
   "dependencies": {
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
+    "heroku": "^7.24.3",
     "lowdb": "^1.0.0",
     "telegraf": "^3.21.2"
   },
@@ -16,11 +17,17 @@
     "node": "8.x"
   },
   "repository": {
-    "url": "https://github.com/nexolute/telegram-scorebot"
+    "url": "git+https://github.com/nexolute/telegram-scorebot.git"
   },
   "license": "MIT",
   "keywords": [
     "node",
     "telegram"
-  ]
+  ],
+  "bugs": {
+    "url": "https://github.com/nexolute/telegram-scorebot/issues"
+  },
+  "homepage": "https://github.com/nexolute/telegram-scorebot#readme",
+  "devDependencies": {},
+  "author": ""
 }
