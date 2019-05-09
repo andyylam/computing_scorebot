@@ -4,7 +4,12 @@ const dotenv = require('dotenv');
 const express = require('express');
 const Telegraf = require('telegraf');
 const Model = require('./model');
+const PORT = process.env.PORT || 3000;
 
+const app = express();
+app.listen(PORT, () => {
+    console.log(`Our app is running on port ${ PORT }`);
+});
 // DOTENV SETUP
 
 dotenv.config();

@@ -20,12 +20,12 @@
     {
       "id": "blue",
       "name": "Erudite",
-      "score": 0,
+      "score": 50,
       "solos": [
         {
           "id": "beast",
           "name": "Beast",
-          "score": 0
+          "score": 90
         },
         {
           "id": "tchalla",
@@ -38,6 +38,15 @@
   "users": [
     {
       "id": 190282242
+    },
+    {
+      "id": 433929751
+    },
+    {
+      "id": null
+    },
+    {
+      "id": null
     }
   ]
 }
