@@ -23,30 +23,32 @@ function getSolo(teamId, soloId) {
 
 // function to log jsonToCSV
 
-module.exports.jsonToCSV = function () {
-  const json = db.getState().teams
+module.exports.reset = function (userId) {
+  return new Promise((resolve, reject) => {
+    const json = db.getState().teams
 
-  let fields = Object.keys(json[0])
-  let replacer = function (key, value) { return value === null ? '' : value }
-  let csv = json.map(function (row) {
-    return fields.map(function (fieldName) {
-      return JSON.stringify(row[fieldName], replacer)
-    }).join(',')
-  })
-  csv.unshift(fields.join(',')) // add header column
-  csv.join('\r\n')
-  fs.writeFile("data.csv", csv, function(err) {});
-
-  db.get('teams')
-    .map(team => {
-      team.score = 0;
-      team.solos.map(solo => {
-        solo.score = 0;
-      })
+    let fields = Object.keys(json[0])
+    let replacer = function (key, value) { return value === null ? '' : value }
+    let csv = json.map(function (row) {
+      return fields.map(function (fieldName) {
+        return JSON.stringify(row[fieldName], replacer)
+      }).join(',')
     })
-    .write();
+    csv.unshift(fields.join(',')) // add header column
+    csv.join('\r\n')
+    fs.writeFile("data.csv", csv, function(err) {});
 
-  return "data.csv";
+    db.get('teams')
+      .map(team => {
+        team.score = 0;
+        team.solos.map(solo => {
+          solo.score = 0;
+        })
+      })
+      .write();
+
+    return "data.csv";
+  });
 }
 
 /**

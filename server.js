@@ -142,7 +142,8 @@ bot.command('who', async ctx => {
 });
 
 bot.command('reset', async ctx => {
-  return ctx.replyWithDocument({source: Model.jsonToCSV()});
+  const userId = ctx.from.id;
+  return ctx.replyWithDocument({source: Model.reset(userId)});
 })
 
 // BOT POLL
