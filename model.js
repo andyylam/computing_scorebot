@@ -25,6 +25,7 @@ function getSolo(teamId, soloId) {
 
 module.exports.reset = function (userId) {
   return new Promise((resolve, reject) => {
+    fs.unlink("data.csv", err => {})
     const json = db.getState().teams
 
     let fields = Object.keys(json[0])
@@ -47,7 +48,7 @@ module.exports.reset = function (userId) {
       })
       .write();
 
-    return "data.csv";
+    resolve("data.csv");
   });
 }
 

@@ -143,7 +143,12 @@ bot.command('who', async ctx => {
 
 bot.command('reset', async ctx => {
   const userId = ctx.from.id;
-  return ctx.replyWithDocument({source: Model.reset(userId)});
+  const document = await Model.reset(userId);
+  try {
+    return ctx.replyWithDocument({source: document});
+  } catch (err) {
+    console.log(err);
+  }
 })
 
 // BOT POLL
