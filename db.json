@@ -1,8 +1,8 @@
 {
   "teams": [
     {
-      "id": "white",
-      "name": "Oracle",
+      "id": "blue",
+      "name": "Loki",
       "score": 0,
       "solos": [
         {
@@ -18,8 +18,37 @@
       ]
     },
     {
-      "id": "blue",
-      "name": "Erudite",
+      "id": "green",
+      "name": "Ossa",
+      "score": 50,
+      "solos": [
+        {
+          "id": "beast",
+          "name": "Beast",
+          "score": 90
+        },
+        {
+          "id": "tchalla",
+          "name": "T'challa",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "id": "yellow",
+      "name": "Thor",
+      "score": 0,
+      "solos": []
+    },
+    {
+      "id": "red",
+      "name": "Hera",
+      "score": 50,
+      "solos": []
+    },
+    {
+      "id": "white",
+      "name": "Aang",
       "score": 50,
       "solos": [
         {
@@ -41,12 +70,6 @@
     },
     {
       "id": 433929751
-    },
-    {
-      "id": null
-    },
-    {
-      "id": null
     }
   ]
 }

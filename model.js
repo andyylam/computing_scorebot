@@ -20,6 +20,21 @@ function getSolo(teamId, soloId) {
   return db.get('teams').find({ id: teamId }).get('solos').find({ id: soloId }).value();
 }
 
+// function to log jsonToCSV
+
+modules.exports.jsonToCSV = function (json) {
+  var fields = Object.keys(json[0])
+  var replacer = function (key, value) { return value === null ? '' : value }
+  var csv = json.map(function (row) {
+    return fields.map(function (fieldName) {
+      return JSON.stringify(row[fieldName], replacer)
+    }).join(',')
+  })
+  csv.unshift(fields.join(',')) // add header column
+
+  console.log(csv.join('\r\n'))
+}
+
 /**
  * Add score to a team.
  *
@@ -29,7 +44,7 @@ function getSolo(teamId, soloId) {
  * @returns {object} - Updated team object.
  */
 
-module.exports.addTeamScore = function(teamId, score, userId) {
+module.exports.addTeamScore = function (teamId, score, userId) {
 
   return new Promise((resolve, reject) => {
 
@@ -40,22 +55,22 @@ module.exports.addTeamScore = function(teamId, score, userId) {
       reject('Error adding score: invalid user');
       return;
     }
-    
+
     if (team === undefined) {
       reject('Error adding score: invalid team id');
       return;
     }
-    
+
     if (!Number.isInteger(score)) {
       reject('Error adding score: score not an integer');
       return;
     }
-    
+
     db.get('teams')
       .find({ id: teamId })
       .set('score', team.score + score)
       .write();
-    
+
     resolve({ team });
 
   });
@@ -72,7 +87,7 @@ module.exports.addTeamScore = function(teamId, score, userId) {
  * @returns {object} - Updated team and solo object.
  */
 
-module.exports.addSoloScore = function(teamId, soloId, score, userId) {
+module.exports.addSoloScore = function (teamId, soloId, score, userId) {
 
   return new Promise((resolve, reject) => {
 
@@ -84,29 +99,29 @@ module.exports.addSoloScore = function(teamId, soloId, score, userId) {
       reject('Error adding score: invalid user');
       return;
     }
-    
+
     if (team === undefined) {
       reject('Error adding score: invalid team id');
       return;
     }
-    
+
     if (solo === undefined) {
       reject('Error adding score: invalid solo id');
       return;
     }
-    
+
     if (!Number.isInteger(score)) {
       reject('Error adding score: score not an integer');
       return;
     }
-    
+
     db.get('teams')
       .find({ id: teamId })
       .get('solos')
       .find({ id: soloId })
       .set('score', solo.score + score)
       .write();
-    
+
     resolve({ team, solo });
 
   });
@@ -120,21 +135,21 @@ module.exports.addSoloScore = function(teamId, soloId, score, userId) {
  * @param {integer} userId - ID of the user invoking this request.
  */
 
-module.exports.addUser = function(targetId, userId) {
+module.exports.addUser = function (targetId, userId) {
 
   return new Promise((resolve, reject) => {
 
     const user = getUser(userId);
-    
+
     if (user === undefined) {
       reject('Error adding user: invalid user');
       return;
     }
-    
+
     db.get('users')
       .push({ id: targetId })
       .write();
-    
+
     resolve();
 
   });
@@ -147,7 +162,7 @@ module.exports.addUser = function(targetId, userId) {
  * @returns {array} - Array of objects, each is a team.
  */
 
-module.exports.getTeamsModel = function() {
+module.exports.getTeamsModel = function () {
   return new Promise((resolve, reject) => {
     resolve(db.get('teams').value());
   });

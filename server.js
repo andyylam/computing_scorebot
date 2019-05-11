@@ -139,6 +139,10 @@ bot.command('who', async ctx => {
   return ctx.replyWithMarkdown(`${ctx.from.first_name} your ID is \`${ctx.from.id}\``);
 });
 
+bot.command('reset', async ctx => {
+  jsonToCSV();
+})
+
 // BOT POLL
 
 bot.startPolling()
