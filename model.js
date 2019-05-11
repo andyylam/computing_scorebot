@@ -22,7 +22,7 @@ function getSolo(teamId, soloId) {
 
 // function to log jsonToCSV
 
-modules.exports.jsonToCSV = function (json) {
+module.exports.jsonToCSV = function (json) {
   var fields = Object.keys(json[0])
   var replacer = function (key, value) { return value === null ? '' : value }
   var csv = json.map(function (row) {
