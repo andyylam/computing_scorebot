@@ -2,6 +2,7 @@
 
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
+const fs = require('fs');
 
 const adapter = new FileSync('db.json');
 const db = low(adapter);
@@ -22,17 +23,30 @@ function getSolo(teamId, soloId) {
 
 // function to log jsonToCSV
 
-module.exports.jsonToCSV = function (json) {
-  var fields = Object.keys(json[0])
-  var replacer = function (key, value) { return value === null ? '' : value }
-  var csv = json.map(function (row) {
+module.exports.jsonToCSV = function () {
+  const json = db.getState().teams
+
+  let fields = Object.keys(json[0])
+  let replacer = function (key, value) { return value === null ? '' : value }
+  let csv = json.map(function (row) {
     return fields.map(function (fieldName) {
       return JSON.stringify(row[fieldName], replacer)
     }).join(',')
   })
   csv.unshift(fields.join(',')) // add header column
+  csv.join('\r\n')
+  fs.writeFile("data.csv", csv, function(err) {});
 
-  console.log(csv.join('\r\n'))
+  db.get('teams')
+    .map(team => {
+      team.score = 0;
+      team.solos.map(solo => {
+        solo.score = 0;
+      })
+    })
+    .write();
+
+  return "data.csv";
 }
 
 /**

@@ -20,12 +20,12 @@
     {
       "id": "green",
       "name": "Ossa",
-      "score": 50,
+      "score": 0,
       "solos": [
         {
           "id": "beast",
           "name": "Beast",
-          "score": 90
+          "score": 0
         },
         {
           "id": "tchalla",
@@ -43,18 +43,18 @@
     {
       "id": "red",
       "name": "Hera",
-      "score": 50,
+      "score": 0,
       "solos": []
     },
     {
       "id": "white",
       "name": "Aang",
-      "score": 50,
+      "score": 0,
       "solos": [
         {
           "id": "beast",
           "name": "Beast",
-          "score": 90
+          "score": 0
         },
         {
           "id": "tchalla",

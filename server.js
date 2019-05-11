@@ -1,9 +1,10 @@
 // REQUIREMENTS
-
 const dotenv = require('dotenv');
 const express = require('express');
 const Telegraf = require('telegraf');
 const Model = require('./model');
+const http = require('http');
+
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -17,6 +18,7 @@ dotenv.config();
 // BOT SETUP
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const website = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`;
 
 bot.telegram.getMe().then(botInfo => {
   bot.options.username = botInfo.username;
@@ -140,7 +142,7 @@ bot.command('who', async ctx => {
 });
 
 bot.command('reset', async ctx => {
-  jsonToCSV();
+  return ctx.replyWithDocument({source: Model.jsonToCSV()});
 })
 
 // BOT POLL
