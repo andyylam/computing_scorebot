@@ -13,20 +13,24 @@ function getUser(userId) {
   return db.get('users').find({ id: userId }).value();
 }
 
-function getTeam(teamId) {
-  return db.get('teams').find({ id: teamId }).value();
+function getHouse(houseId) {
+  return db.get('houses').find({ id: houseId }).value();
 }
 
-function getSolo(teamId, soloId) {
-  return db.get('teams').find({ id: teamId }).get('solos').find({ id: soloId }).value();
+function getOg(houseId, ogId) {
+  return db.get('houses').find({ id: houseId }).get('ogs').find({ id: ogId }).value();
 }
 
-// function to log jsonToCSV
+/**
+ * Returns a .csv file of current points and reset all points
+ *
+ * @param {string} userId - id of the user doing reset
+ */
 
 module.exports.reset = function (userId) {
   return new Promise((resolve, reject) => {
-    fs.unlink("data.csv", err => {})
-    const json = db.getState().teams
+    fs.unlinkSync("data.csv", err => {})
+    const json = db.getState().houses
 
     let fields = Object.keys(json[0])
     let replacer = function (key, value) { return value === null ? '' : value }
@@ -39,11 +43,11 @@ module.exports.reset = function (userId) {
     csv.join('\r\n')
     fs.writeFile("data.csv", csv, function(err) {});
 
-    db.get('teams')
-      .map(team => {
-        team.score = 0;
-        team.solos.map(solo => {
-          solo.score = 0;
+    db.get('houses')
+      .map(house => {
+        house.score = 0;
+        house.ogs.map(og => {
+          og.score = 0;
         })
       })
       .write();
@@ -53,28 +57,28 @@ module.exports.reset = function (userId) {
 }
 
 /**
- * Add score to a team.
+ * Add score to a house.
  *
- * @param {string} teamId - ID of the team to add the score.
+ * @param {string} houseId - ID of the house to add the score.
  * @param {integer} score - Score to be added.
  * @param {integer} userId - ID of the user invoking this request.
- * @returns {object} - Updated team object.
+ * @returns {object} - Updated house object.
  */
 
-module.exports.addTeamScore = function (teamId, score, userId) {
+module.exports.addhousescore = function (houseId, score, userId) {
 
   return new Promise((resolve, reject) => {
 
     const user = getUser(userId);
-    const team = getTeam(teamId);
+    const house = getHouse(houseId);
 
     if (user === undefined) {
       reject('Error adding score: invalid user');
       return;
     }
 
-    if (team === undefined) {
-      reject('Error adding score: invalid team id');
+    if (house === undefined) {
+      reject('Error adding score: invalid house id');
       return;
     }
 
@@ -83,47 +87,47 @@ module.exports.addTeamScore = function (teamId, score, userId) {
       return;
     }
 
-    db.get('teams')
-      .find({ id: teamId })
-      .set('score', team.score + score)
+    db.get('houses')
+      .find({ id: houseId })
+      .set('score', house.score + score)
       .write();
 
-    resolve({ team });
+    resolve({ house });
 
   });
 
 };
 
 /**
- * Add score to a solo.
+ * Add score to a og.
  *
- * @param {string} teamId - ID of the team to add the score.
- * @param {string} soloId - ID of the solo in the team to add the score.
+ * @param {string} houseId - ID of the house to add the score.
+ * @param {string} ogId - ID of the og in the house to add the score.
  * @param {integer} score - Score to be added.
  * @param {integer} userId - ID of the user invoking this request.
- * @returns {object} - Updated team and solo object.
+ * @returns {object} - Updated house and og object.
  */
 
-module.exports.addSoloScore = function (teamId, soloId, score, userId) {
+module.exports.addOgScore = function (houseId, ogId, score, userId) {
 
   return new Promise((resolve, reject) => {
 
     const user = getUser(userId);
-    const team = getTeam(teamId);
-    const solo = getSolo(teamId, soloId);
+    const house = getHouse(houseId);
+    const og = getOg(houseId, ogId);
 
     if (user === undefined) {
       reject('Error adding score: invalid user');
       return;
     }
 
-    if (team === undefined) {
-      reject('Error adding score: invalid team id');
+    if (house === undefined) {
+      reject('Error adding score: invalid house id');
       return;
     }
 
-    if (solo === undefined) {
-      reject('Error adding score: invalid solo id');
+    if (og === undefined) {
+      reject('Error adding score: invalid og id');
       return;
     }
 
@@ -132,14 +136,14 @@ module.exports.addSoloScore = function (teamId, soloId, score, userId) {
       return;
     }
 
-    db.get('teams')
-      .find({ id: teamId })
-      .get('solos')
-      .find({ id: soloId })
-      .set('score', solo.score + score)
+    db.get('houses')
+      .find({ id: houseId })
+      .get('ogs')
+      .find({ id: ogId })
+      .set('score', og.score + score)
       .write();
 
-    resolve({ team, solo });
+    resolve({ house, og });
 
   });
 
@@ -155,7 +159,10 @@ module.exports.addSoloScore = function (teamId, soloId, score, userId) {
 module.exports.addUser = function (targetId, userId) {
 
   return new Promise((resolve, reject) => {
-
+    if (Number.isNaN(targetId)) {
+      reject('Error: invalid userId');
+      return;
+    }
     const user = getUser(userId);
 
     if (user === undefined) {
@@ -174,13 +181,53 @@ module.exports.addUser = function (targetId, userId) {
 };
 
 /**
- * Get the model for all teams.
+ * Get the model for all houses.
  *
- * @returns {array} - Array of objects, each is a team.
+ * @returns {array} - Array of objects, each is a house.
  */
 
-module.exports.getTeamsModel = function () {
+module.exports.getHousesModel = function () {
   return new Promise((resolve, reject) => {
-    resolve(db.get('teams').value());
+    resolve(db.get('houses').value());
   });
 };
+
+module.exports.addOg = function(houseId, ogId, ogName, userId) {
+  return new Promise((resolve, reject) => {
+    const user = getUser(userId);
+
+    if (user === undefined) {
+      reject('Error adding user: invalid user');
+      return;
+    }
+
+    db.get('houses').find({ id: houseId }).get('ogs').push({
+      "id": ogId,
+      "name": ogName,
+      "score": 0
+    }).write();
+
+    resolve();
+  });
+}
+
+module.exports.addHouse = function(houseId, houseName, userId) {
+  return new Promise((resolve, reject) => {
+
+    const user = getUser(userId);
+
+    if (user === undefined) {
+      reject('Error adding user: invalid user');
+      return;
+    }
+
+    db.get('houses').push({
+      "id": houseId,
+      "name": houseName,
+      "score": 0,
+      "ogs": []
+    }).write();
+
+    resolve();
+  });
+}

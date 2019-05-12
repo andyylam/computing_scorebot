@@ -30,8 +30,8 @@ bot.start(ctx => {
   let message = '';
   message += 'Hello! I can help you keep track of scores. You can control me by sending me these commands.\n';
   message += '\n';
-  message += '/addteamscore - add team score\n';
-  message += '/addsoloscore - add solo score\n';
+  message += '/addhousescore - add house score\n';
+  message += '/addogscore - add og score\n';
   message += '/adduser - add user\n';
   message += '/help - show detailed help\n';
   message += '/displayscore - display score\n';
@@ -43,61 +43,67 @@ bot.start(ctx => {
 
 bot.help(ctx => {
   let message = '';
-  message += 'Add [score] to [teamId].\n';
-  message += '/addteamscore [teamId] [score]\n';
-  message += '/t [teamId] [score]\n';
+  message += 'This is a telegram bot created to keep track of scores for Computing FOP! ';
+  message += 'Only admins can make changes to scores - others can only view scores.\n';
   message += '\n';
-  message += 'Add [score] to [soloId] from [teamId].\n';
-  message += '/addsoloscore [teamId] [soloId] [score]\n';
-  message += '/s [teamId] [soloId] [score]\n';
+  message += '*Commands:* \n';
+  message += 'Add a new house. \n';
+  message += '/addhouse [houseId] [houseName]. \n'
   message += '\n';
-  message += 'Add [userId].\n';
-  message += '/adduser [userId]\n';
-  message += '/u [teamId] [soloId] [score]\n';
+  message += 'Add a new og. \n';
+  message += '/addog [houseId] [ogId] [ogName]. \n'
   message += '\n';
-  message += 'Show this detailed helpsheet.\n';
-  message += '/help\n';
+  message += 'Add [score] to [houseId].\n';
+  message += '/addhousescore [houseId] [score]\n';
+  message += '\n';
+  message += 'Add [score] to [ogId] from [houseId].\n';
+  message += '/addogscore [houseId] [ogId] [score]\n';
+  message += '\n';
+  message += 'Add an admin (you must be an admin) [userId].\n';
+  message += '/addadmin [userId]\n';
   message += '\n';
   message += 'Display score.\n';
   message += '/displayscore\n';
-  message += '/ds\n';
   message += '\n';
   message += 'Get user ID.\n';
   message += '/who\n';
   message += '\n';
-  return ctx.reply(message);
+  message += 'Obtain a .csv file of current points and reset all points to zero\n'
+  message += '/reset';
+  return ctx.telegram.sendMessage(ctx.chat.id, message, {parse_mode: 'Markdown',
+    reply_to_message_id: ctx.message.message_id});
 });
 
-// ADDTEAMSCORE COMMAND
+// addhousescore COMMAND
 
-bot.command(['addteamscore', 't'], async ctx => {
+bot.command(['addhousescore', 't'], async ctx => {
   const args = ctx.message.text.split(' ');
-  const teamId = args[1];
+  const houseId = args[1];
   const score = Number(args[2]);
   const userId = ctx.from.id;
  
   try {
-    const res = await Model.addTeamScore(teamId, score, userId);
-    const newScore = res.team.solos.reduce((accumulator, solo) => accumulator + solo.score, res.team.score);
-    const message = `*${res.team.name}* has *${newScore}* points.`;
+    const res = await Model.addHouseScore(houseId, score, userId);
+    const newScore = res.house.ogs.reduce((accumulator, og) => accumulator + og.score, res.house.score);
+    const message = `*${res.house.name}* has *${newScore}* points.`;
     return ctx.telegram.sendMessage(ctx.chat.id, message, { parse_mode: 'Markdown', reply_to_message_id: ctx.message.message_id });
   } catch (err) {
     return ctx.reply(err);
   }
 });
 
-// ADDSOLOSCORE COMMAND
+// ADDOGSCORE COMMAND
 
-bot.command(['addsoloscore', 's'], async ctx => {
+bot.command(['addogscore', 's'], async ctx => {
   const args = ctx.message.text.split(' ');
-  const teamId = args[1];
-  const soloId = args[2];
+  const houseId = args[1];
+  const ogId = args[2];
   const score = Number(args[3]);
   const userId = ctx.from.id;
   
   try {
-    const res = await Model.addSoloScore(teamId, soloId, score, userId);
-    const message = `*${res.solo.name}* from *${res.team.name}* has *${res.solo.score} points*`;
+    const res = await Model.addOgScore(houseId, ogId, score, userId);
+    const message = `*${res.og.name}* from *${res.house.name}* has *${res.og.score} points*`;
     return ctx.telegram.sendMessage(ctx.chat.id, message, { parse_mode: 'Markdown', reply_to_message_id: ctx.message.message_id });
   } catch (err) {
     return ctx.reply(err);
@@ -106,7 +112,7 @@ bot.command(['addsoloscore', 's'], async ctx => {
 
 // ADDUSER COMMAND
 
-bot.command(['adduser', 'u'], async ctx => {
+bot.command(['addadmin', 'u'], async ctx => {
   const args = ctx.message.text.split(' ');
   const targetId = Number(args[1]);
   const userId = ctx.from.id;
@@ -122,16 +128,21 @@ bot.command(['adduser', 'u'], async ctx => {
 
 // DISPLAYSCORE COMMAND
 
-bot.command(['displayscore', 'ds'], async ctx => {
-  const teamsModel = await Model.getTeamsModel();
-  const teamsMessage = teamsModel.map(team => {
-    const totalScore = team.solos.reduce((score, solo) => score + solo.score, team.score);
-    return team.solos.reduce((accumulator, solo) => {
-      return `${accumulator}\n${solo.name} (${solo.id}) - \`${solo.score}\``;
-    }, `*${team.name} (${team.id}) - ${totalScore} = ${totalScore - team.score} + ${team.score}*`);
+async function ds() {
+  const housesModel = await Model.getHousesModel();
+  const houseMessage = housesModel.map(house => {
+    const totalScore = house.ogs.reduce((score, og) => score + og.score, house.score);
+    return house.ogs.reduce((accumulator, og) => {
+      return `${accumulator}\n${og.name} (${og.id}) - \`${og.score}\``;
+    }, `*${house.name} (${house.id}) - ${totalScore} = ${totalScore - house.score} + ${house.score}*`);
   });
   
-  const message = teamsMessage.reduce((accumulator, mess) => `${accumulator}\n\n${mess}`);
+  const message = houseMessage.reduce((accumulator, mess) => `${accumulator}\n\n${mess}`);
+  return message;
+}
+
+bot.command(['displayscore', 'ds'], async ctx => {
+  const message = await ds();
   return ctx.replyWithMarkdown(message);
 });
 
@@ -142,6 +153,8 @@ bot.command('who', async ctx => {
 });
 
 bot.command('reset', async ctx => {
+  const message = await ds();
+  ctx.replyWithMarkdown(message);
   const userId = ctx.from.id;
   const document = await Model.reset(userId);
   try {
@@ -151,6 +164,36 @@ bot.command('reset', async ctx => {
   }
 })
 
+bot.command('addhouse', async ctx => {
+  const args = ctx.message.text.split(' ');
+  const houseId = args[1];
+  const houseName = args[2];
+  const userId = ctx.from.id;
+
+  try {
+    const res = await Model.addhouse(houseId, houseName, userId);
+    const message = `${houseName} has been added. Please add OGs!`;
+    return ctx.reply(message);
+  } catch (err) {
+    return ctx.reply('Unknown error');
+  }
+})
+
+bot.command('addog', async ctx => {
+  const args = ctx.message.text.split(' ');
+  const houseId = args[1];
+  const ogId = args[2];
+  const ogName = args[3];
+  const userId = ctx.from.id;
+
+  try {
+    const res = await Model.addOg(houseId, ogId, ogName, userId);
+    const message = `${ogName} has been added.`;
+    return ctx.reply(message);
+  } catch (err) {
+    return ctx.reply(err);
+  }
+})
 // BOT POLL
 
 bot.startPolling()
