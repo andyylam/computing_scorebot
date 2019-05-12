@@ -2,7 +2,7 @@
 
 Initially made at https://github.com/nexolute/telegram-scorebot, but personally cleaned up documentation and command helpsheet, and added features like addOg and addHouse so that admins don't have to manually edit the json file.
 
-Commands:
+Commands:  
 help - Open a help sheet of commands   
 ds - Display scores  
 addhouse - Add a new house.  
