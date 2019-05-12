@@ -13,6 +13,10 @@ function getUser(userId) {
   return db.get('users').find({ id: userId }).value();
 }
 
+function getSuperUser(userId) {
+  return db.get('superusers').find({ id: userId }).value();
+}
+
 function getHouse(houseId) {
   return db.get('houses').find({ id: houseId }).value();
 }
@@ -29,6 +33,13 @@ function getOg(houseId, ogId) {
 
 module.exports.reset = function (userId) {
   return new Promise((resolve, reject) => {
+    const user = getSuperUser(userId);
+    
+    if (user === undefined) {
+      reject('You are not a superuser!');
+      return;
+    }
+
     fs.unlinkSync("data.csv", err => {})
     const json = db.getState().houses
 
@@ -65,7 +76,7 @@ module.exports.reset = function (userId) {
  * @returns {object} - Updated house object.
  */
 
-module.exports.addhousescore = function (houseId, score, userId) {
+module.exports.addHouseScore = function (houseId, score, userId) {
 
   return new Promise((resolve, reject) => {
 
@@ -216,7 +227,7 @@ module.exports.addHouse = function(houseId, houseName, userId) {
 
     const user = getUser(userId);
 
-    if (user === undefined) {
+    if (user !== 193836494 || user !== 346012334) {
       reject('Error adding user: invalid user');
       return;
     }

@@ -153,16 +153,16 @@ bot.command('who', async ctx => {
 });
 
 bot.command('reset', async ctx => {
-  const message = await ds();
-  ctx.replyWithMarkdown(message);
   const userId = ctx.from.id;
-  const document = await Model.reset(userId);
-  try {
+  const message = await ds();
+  
+  Model.reset(userId).then(res => {
+    ctx.replyWithMarkdown(message);
     return ctx.replyWithDocument({source: document});
-  } catch (err) {
-    console.log(err);
-  }
-})
+  }).catch(err => {
+    ctx.reply(err);
+  });
+});
 
 bot.command('addhouse', async ctx => {
   const args = ctx.message.text.split(' ');
