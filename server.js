@@ -194,6 +194,21 @@ bot.command('addog', async ctx => {
     return ctx.reply(err);
   }
 })
+
+bot.command('removeog', async ctx => {
+  const args = ctx.message.text.split(' ');
+  const houseId = args[1];
+  const ogId = args[2];
+  const userId = ctx.from.id;
+
+  try {
+    const res = await Model.removeOg(houseId, ogId, userId);
+    const message = `${ogId} has been removed.`;
+    return ctx.reply(message);
+  } catch (err) {
+    return ctx.reply(err);
+  }
+})
 // BOT POLL
 
 bot.startPolling()

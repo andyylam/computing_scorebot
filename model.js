@@ -242,3 +242,22 @@ module.exports.addHouse = function(houseId, houseName, userId) {
     resolve();
   });
 }
+
+module.exports.removeOg = function(houseId, ogId, userId) {
+  return new Promise((resolve, reject) => {
+
+    const user = getUser(userId);
+
+    if (user === undefined) {
+      reject('You are not an admin!');
+      return;
+    }
+    
+    db.get('houses')
+      .find({id : houseId})
+      .get('ogs')
+      .remove({id : ogId});
+    
+    resolve('Removed successfully');
+  });
+}
