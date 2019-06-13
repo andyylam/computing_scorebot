@@ -1,6 +1,6 @@
 # ScoreBot for Computing Freshmen Camps 
 
-Initially made at https://github.com/nexolute/telegram-scorebot, but personally cleaned up documentation and command helpsheet, and added features like addOg and addHouse so that admins don't have to manually edit the json file.
+👾 A simple scorebot to keep track of points for Computing camps!
 
 ## Commands:  
 `help` - Open a help sheet of commands   
