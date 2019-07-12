@@ -3,9 +3,19 @@ const dotenv = require("dotenv");
 const express = require("express");
 const Telegraf = require("telegraf");
 const Model = require("./model");
-const http = require("http");
+const winston = require("winston");
 
-const PORT = process.env.PORT || 3000;
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: "error.log", level: "error" }),
+    new winston.transports.File({ filename: "combined.log" })
+  ]
+});
+
+const PORT = process.env.PORT || 8000;
 
 const app = express();
 app.listen(PORT, () => {
@@ -31,14 +41,40 @@ bot.telegram.getMe().then(botInfo => {
 bot.start(ctx => {
   let message = "";
   message +=
-    "Hello! I can help you keep track of scores. You can control me by sending me these commands.\n";
+    "This is a telegram bot created to keep track of scores for Computing FOP! ";
+  message += "Only admins can make view and change scores.\n";
   message += "\n";
-  message += "/addhousescore - add house score\n";
-  message += "/addogscore - add og score\n";
-  message += "/adduser - add user\n";
-  message += "/help - show detailed help\n";
-  message += "/displayscore - display score\n";
-  message += "/who - get user ID\n";
+  message += "*Commands:* \n";
+  message += "Add a new house. \n";
+  message += "/addhouse (houseId) (houseName). \n";
+  message += "\n";
+  message += "Add a new og. \n";
+  message += "/addog (houseId) (ogId) (ogName). \n";
+  message += "\n";
+  message += "Add (score) to (houseId).\n";
+  message += "/addhousescore (houseId) (score)\n";
+  message += "\n";
+  message += "Add (score) to (ogId) from (houseId).\n";
+  message += "/addogscore (houseId) (ogId) (score)\n";
+  message += "\n";
+  message += "Add an admin (you must be an admin) (userId).\n";
+  message += "/addadmin (userId)\n";
+  message += "\n";
+  message += "Display score.\n";
+  message += "/displayscore\n";
+  message += "\n";
+  message += "Get user ID.\n";
+  message += "/who\n";
+  message += "\n";
+  message += "Remove an og.\n";
+  message += "/removeog (houseId) (ogId)\n";
+  message += "\n";
+  message += "Remove a house.\n";
+  message += "/removeog (houseId)\n";
+  message += "\n";
+  message +=
+    "Obtain a .csv file of current points and reset all points to zero\n";
+  message += "/reset";
   return ctx.reply(message);
 });
 
@@ -73,6 +109,12 @@ bot.help(ctx => {
   message += "Get user ID.\n";
   message += "/who\n";
   message += "\n";
+  message += "Remove an og.\n";
+  message += "/removeog (houseId) (ogId)\n";
+  message += "\n";
+  message += "Remove a house.\n";
+  message += "/removeog (houseId)\n";
+  message += "\n";
   message +=
     "Obtain a .csv file of current points and reset all points to zero\n";
   message += "/reset";
@@ -84,97 +126,85 @@ bot.help(ctx => {
 
 // addhousescore COMMAND
 
-bot.command(["addhousescore", "t"], async ctx => {
+bot.command(["addhousescore"], ctx => {
   const args = ctx.message.text.split(" ");
   const houseId = args[1];
   const score = Number(args[2]);
   const userId = ctx.from.id;
 
-  try {
-    const res = await Model.addHouseScore(houseId, score, userId);
-    const newScore = res.house.ogs.reduce(
-      (accumulator, og) => accumulator + og.score,
-      res.house.score
-    );
-    const message = `*${res.house.name}* has *${newScore}* points.`;
-    return ctx.telegram.sendMessage(ctx.chat.id, message, {
-      parse_mode: "Markdown",
-      reply_to_message_id: ctx.message.message_id
-    });
-  } catch (err) {
-    return ctx.reply(err);
-  }
+  Model.addHouseScore(houseId, score, userId)
+    .then(res => {
+      const newScore = res.house.ogs.reduce(
+        (accumulator, og) => accumulator + og.score,
+        res.house.score
+      );
+      const message = `*${res.house.name}* has *${newScore}* points.`;
+      return ctx.telegram.sendMessage(ctx.chat.id, message, {
+        parse_mode: "Markdown",
+        reply_to_message_id: ctx.message.message_id
+      });
+    })
+    .catch(err => ctx.reply(err));
 });
 
 // ADDOGSCORE COMMAND
 
-bot.command(["addogscore", "s"], async ctx => {
+bot.command(["addogscore", "s"], ctx => {
   const args = ctx.message.text.split(" ");
   const houseId = args[1];
   const ogId = args[2];
   const score = Number(args[3]);
   const userId = ctx.from.id;
 
-  try {
-    const res = await Model.addOgScore(houseId, ogId, score, userId);
-    const message = `*${res.og.name}* from *${res.house.name}* has *${
-      res.og.score
-    } points*`;
-    return ctx.telegram.sendMessage(ctx.chat.id, message, {
-      parse_mode: "Markdown",
-      reply_to_message_id: ctx.message.message_id
-    });
-  } catch (err) {
-    return ctx.reply(err);
-  }
+  Model.addOgScore(houseId, ogId, score, userId)
+    .then(res => {
+      const message = `*${res.og.name}* from *${res.house.name}* has *${
+        res.og.score
+      } points*`;
+      return ctx.telegram.sendMessage(ctx.chat.id, message, {
+        parse_mode: "Markdown",
+        reply_to_message_id: ctx.message.message_id
+      });
+    })
+    .catch(err => ctx.reply(err));
 });
-
 // ADDUSER COMMAND
 
-bot.command(["addadmin", "u"], async ctx => {
+bot.command(["addadmin", "u"], ctx => {
   const args = ctx.message.text.split(" ");
   const targetId = Number(args[1]);
   const userId = ctx.from.id;
 
-  try {
-    const newScore = await Model.addUser(targetId, userId);
-    const message = `User ${targetId} has been added`;
-    return ctx.reply(message);
-  } catch (err) {
-    return ctx.reply(err);
-  }
+  Model.addUser(targetId, userId)
+    .then(res => ctx.reply(res))
+    .catch(err => {
+      logger.log({
+        level: "info",
+        message: "Command: ADDADMIN" + err
+      });
+      return ctx.reply(err);
+    });
 });
 
 // DISPLAYSCORE COMMAND
 
-// async function ds() {
-// const housesModel = await Model.getHousesModel();
-// const houseMessage = housesModel.map(house => {
-// const totalScore = house.ogs.reduce(
-// (score, og) => score + og.score,
-// house.score
-// );
-// return house.ogs.reduce((accumulator, og) => {
-// return `${accumulator}\n${og.name} (${og.id}) - \`${og.score}\``;
-// }, `*${house.name} (${house.id}) - ${totalScore} = ${totalScore - house.score} + ${house.score}*`);
-// });
-
-// const message = houseMessage.reduce(
-// (accumulator, mess) => `${accumulator}\n\n${mess}`
-// );
-// return message;
-// }
-
-bot.command(["displayscore", "ds"], async ctx => {
+bot.command(["displayscore", "ds"], ctx => {
   const userId = ctx.from.id;
+
   Model.ds(userId)
     .then(res => ctx.replyWithMarkdown(res))
-    .catch(err => ctx.replyWithMarkdown(err));
+    .catch(err => {
+      logger.log({
+        level: "Command: DISPLAYSCORE" + "info",
+        message: err
+      });
+      return ctx.reply(err);
+    });
 });
 
 // WHO COMMAND
 
-bot.command("who", async ctx => {
+bot.command("who", ctx => {
   return ctx.replyWithMarkdown(
     `${ctx.from.first_name} your ID is \`${ctx.from.id}\``
   );
@@ -182,63 +212,103 @@ bot.command("who", async ctx => {
 
 bot.command("reset", async ctx => {
   const userId = ctx.from.id;
-  const message = Model.ds(userId).catch(err => ctx.replyWithMarkdown(err));
+  const message = await Model.ds(userId);
 
   Model.reset(userId)
     .then(res => {
       ctx.replyWithMarkdown(message);
-      return ctx.replyWithDocument({ source: document });
+      return ctx.replyWithDocument({ source: res });
     })
     .catch(err => {
-      ctx.reply(err);
+      logger.log({
+        level: "info",
+        message: "Command: WHO" + err
+      });
+      return ctx.reply(err);
     });
 });
 
-bot.command("addhouse", async ctx => {
+bot.command("addhouse", ctx => {
   const args = ctx.message.text.split(" ");
   const houseId = args[1];
   const houseName = args[2];
   const userId = ctx.from.id;
 
-  try {
-    const res = await Model.addhouse(houseId, houseName, userId);
-    const message = `${houseName} has been added. Please add OGs!`;
-    return ctx.reply(message);
-  } catch (err) {
-    return ctx.reply("Unknown error");
-  }
+  Model.addHouse(houseId, houseName, userId)
+    .then(res => ctx.reply(res))
+    .catch(err => {
+      logger.log({
+        level: "info",
+        message: "Command: ADDHOUSE" + err
+      });
+      return ctx.reply(err);
+    });
 });
 
-bot.command("addog", async ctx => {
+bot.command("addog", ctx => {
   const args = ctx.message.text.split(" ");
   const houseId = args[1];
   const ogId = args[2];
   const ogName = args[3];
   const userId = ctx.from.id;
 
-  try {
-    const res = await Model.addOg(houseId, ogId, ogName, userId);
-    const message = `${ogName} has been added.`;
-    return ctx.reply(message);
-  } catch (err) {
-    return ctx.reply(err);
-  }
+  Model.addOg(houseId, ogId, ogName, userId)
+    .then(res => ctx.reply(res))
+    .catch(err => {
+      logger.log({
+        level: "info",
+        message: "Command: ADDOG" + err
+      });
+      return ctx.reply(err);
+    });
 });
 
-bot.command("removeog", async ctx => {
+bot.command("removeog", ctx => {
   const args = ctx.message.text.split(" ");
   const houseId = args[1];
   const ogId = args[2];
   const userId = ctx.from.id;
 
-  try {
-    const res = await Model.removeOg(houseId, ogId, userId);
-    const message = `${ogId} has been removed.`;
-    return ctx.reply(message);
-  } catch (err) {
-    return ctx.reply(err);
-  }
+  Model.removeOg(houseId, ogId, userId)
+    .then(res => ctx.reply(res))
+    .catch(err => {
+      logger.log({
+        level: "info",
+        message: "Command: REMOVEOG" + err
+      });
+      return ctx.reply(err);
+    });
 });
 // BOT POLL
+
+bot.command("removehouse", ctx => {
+  const args = ctx.message.text.split(" ");
+  const houseId = args[1];
+  const userId = ctx.from.id;
+
+  Model.removeHouse(houseId, userId)
+    .then(res => ctx.reply(res))
+    .catch(err => {
+      logger.log({
+        level: "info",
+        message: "Command: REMOVEHOUSE" + err
+      });
+      return ctx.reply(err);
+    });
+});
+
+process.on("uncaughtException", err => {
+  logger.log({
+    level: "error",
+    message: err
+  });
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.log({
+    level: "error",
+    message: "Unhandled Rejection at:" + reason.stack || reason
+  });
+});
 
 bot.startPolling();
