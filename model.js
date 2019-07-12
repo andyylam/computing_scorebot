@@ -34,13 +34,13 @@ function getOg(houseId, ogId) {
 module.exports.reset = function (userId) {
   return new Promise((resolve, reject) => {
     const user = getSuperUser(userId);
-    
+
     if (user === undefined) {
       reject('You are not a superuser!');
       return;
     }
 
-    fs.unlinkSync("data.csv", err => {})
+    fs.unlinkSync("data.csv", err => { })
     const json = db.getState().houses
 
     let fields = Object.keys(json[0])
@@ -52,7 +52,7 @@ module.exports.reset = function (userId) {
     })
     csv.unshift(fields.join(',')) // add header column
     csv.join('\r\n')
-    fs.writeFile("data.csv", csv, function(err) {});
+    fs.writeFile("data.csv", csv, function (err) { });
 
     db.get('houses')
       .map(house => {
@@ -185,8 +185,7 @@ module.exports.addUser = function (targetId, userId) {
       .push({ id: targetId })
       .write();
 
-    resolve();
-
+    resolve(`${targetId} has been added as an admin`);
   });
 
 };
@@ -197,18 +196,21 @@ module.exports.addUser = function (targetId, userId) {
  * @returns {array} - Array of objects, each is a house.
  */
 
-module.exports.getHousesModel = function () {
-  return new Promise((resolve, reject) => {
-    resolve(db.get('houses').value());
-  });
+const getHousesModel = () => {
+  return db.get('houses').value();
 };
 
-module.exports.addOg = function(houseId, ogId, ogName, userId) {
+module.exports.addOg = function (houseId, ogId, ogName, userId) {
   return new Promise((resolve, reject) => {
     const user = getUser(userId);
 
     if (user === undefined) {
       reject('Error adding user: invalid user');
+      return;
+    }
+
+    if (houseId === undefined || ogId === undefined || ogName === undefined) {
+      reject('Wrong arguments!');
       return;
     }
 
@@ -218,17 +220,22 @@ module.exports.addOg = function(houseId, ogId, ogName, userId) {
       "score": 0
     }).write();
 
-    resolve();
+    resolve(`${ogName} has been successfully added to ${houseId}!`);
   });
 }
 
-module.exports.addHouse = function(houseId, houseName, userId) {
+module.exports.addHouse = function (houseId, houseName, userId) {
   return new Promise((resolve, reject) => {
 
     const user = getUser(userId);
 
-    if (user !== 193836494 || user !== 346012334) {
+    if (user === undefined) {
       reject('Error adding user: invalid user');
+      return;
+    }
+
+    if (houseId === undefined || houseName === undefined) {
+      reject('Wrong arguments!');
       return;
     }
 
@@ -239,11 +246,11 @@ module.exports.addHouse = function(houseId, houseName, userId) {
       "ogs": []
     }).write();
 
-    resolve();
+    resolve(`${houseName} has been added!`);
   });
 }
 
-module.exports.removeOg = function(houseId, ogId, userId) {
+module.exports.removeOg = function (houseId, ogId, userId) {
   return new Promise((resolve, reject) => {
 
     const user = getUser(userId);
@@ -252,12 +259,64 @@ module.exports.removeOg = function(houseId, ogId, userId) {
       reject('You are not an admin!');
       return;
     }
-    
+
+    if (houseId === undefined || ogId === undefined) {
+      reject('Wrong arguments!');
+      return;
+    }
+
     db.get('houses')
-      .find({id : houseId})
+      .find({ id: houseId })
       .get('ogs')
-      .remove({id : ogId});
-    
+      .remove({ id: ogId })
+      .write();
+
     resolve('Removed successfully');
   });
+}
+
+module.exports.removeHouse = (houseId, userId) => {
+  return new Promise((resolve, reject) => {
+
+    const user = getUser(userId);
+
+    if (user === undefined) {
+      reject('You are not an admin!');
+      return;
+    }
+
+    if (houseId === undefined) {
+      reject('Wrong arguments!');
+      return;
+    }
+
+    db.get('houses')
+      .remove({ id: houseId })
+      .write();
+
+    resolve('Removed successfully');
+  });
+}
+
+module.exports.ds = (userId) => {
+  return new Promise((resolve, reject) => {
+
+    const user = getUser(userId);
+
+    if (user === undefined) {
+      reject('You are not an admin!');
+      return;
+    }
+
+    const housesModel = getHousesModel();
+    const houseMessage = housesModel.map(house => {
+      const totalScore = house.ogs.reduce((score, og) => score + og.score, house.score);
+      return house.ogs.reduce((accumulator, og) => {
+        return `${accumulator}\n${og.name} (${og.id}) - \`${og.score}\``;
+      }, `*${house.name} (${house.id}) - ${totalScore} = ${totalScore - house.score} + ${house.score}*`);
+    });
+
+    const message = houseMessage.reduce((accumulator, mess) => `${accumulator}\n\n${mess}`);
+    resolve(message);
+  })
 }
